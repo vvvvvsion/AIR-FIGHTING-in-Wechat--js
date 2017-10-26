@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WeChat's  Airplane</title>
+    <style>
+        *{font-style: normal;font-weight: normal;margin: 0;padding:0;}
+        b,em{display: none;}
+        i,em,b{position: absolute;}
+        img{vertical-align: middle}
+        p{font:30px/30px "Microsoft Yahei";color:red;position: absolute;top:200px;width:100%;text-align: center;}
+        #wrap{width: 320px;height: 568px;position: absolute;left: 500px;background-image: url("img/background_1.png");overflow: hidden;cursor: none}
+        i{position: absolute;display: none }
+        .star{cursor: default}
+        a{position: absolute;left: 50%;top:50%;margin-left:-100px;width: 200px;font:bold 40px/60px "楷体";text-align: center;
+        text-decoration: none;color: #9b999c;}
+        .a2{top:70%}
+        #end{display: none}
+        a:hover{color:#105185}
+    </style>
+    <script>
+        window.onload=function () {
+
+            new  Airplane("wrap")
+        };
+
+        function Airplane(id){
+            var oWrap=document.getElementById(id);
+            oWrap.grade=0;
+            this.oEnemyplane=oWrap.getElementsByTagName('em');
+            this.oMineplane=oWrap.getElementsByTagName('i')[0];
+            this.oBullet=oWrap.getElementsByTagName('b');
+            this.oStar=oWrap.getElementsByTagName('a')[0];
+            var that=this;
+            this.bgps=0;
+            this.oStar.onclick=function () {
+                //游戏开始界面
+            that.oMineplane.style.display="block";
+            this.parentNode.style.display="none";
+            //计数,什么时候生成大飞机和小飞机
+                oWrap.n=0;
+                oWrap.timer= setInterval(function () {
+                oWrap.n++;
+                that.drop(oWrap,oWrap.n);
+                if(oWrap.n>10){
+                    oWrap.n=0
+                }
+                },500);
+                //生成子弹
+                oWrap.timer2=setInterval(function () {
+                that.bullets(that.oMineplane,"wrap");
+                },150);
+                //背景滚动
+                oWrap.timer3=setInterval(function () {
+                    that.bgscroll(oWrap);
+                },10)
+                };
+            //控制我方飞机移动
+            oWrap.onmouseover=function (ev) {
+                document.onmousemove=function (ev) {
+                    var ev = window.event  ||ev;
+                   that.mineMove(ev,that.oMineplane);
+                }
+            };
+        }
+
+//飞机掉下来
+        Airplane.prototype.drop=function (obj,n) {
+            var enemy=  document.createElement('em');
+            if(n>10){
+                enemy.big=3;
+                enemy.life=8;
+                //自带属性根据其判断什么飞机有几条命
+                enemy.innerHTML="<img src='img/enemy2_fly_1.png'>";
+                enemy.l=Math.random()*210;
+                enemy.t=-164;
+            }
+            else  if(n>(Math.random()*5+3||n<9)){
+                enemy.big=2;
+                enemy.life=4;
+                enemy.t=-60;
+                enemy.innerHTML="<img src='img/enemy3_fly_1.png'>";
+                enemy.l=Math.random()*274;
+            }
+            else {
+                enemy.big=1;
+                enemy.life=2;
+                enemy.t=-20;
+            enemy.innerHTML="<img src='img/enemy1_fly_1.png'>";
+                enemy.l=Math.random()*286;
+            }
+
+            enemy.style.left=enemy.l+"px";
+            obj.appendChild(enemy);
+            enemy.style.top=(enemy.t+=1)+"px";
+            enemy.style.display="block";
+
+            var  oMineplane=obj.getElementsByTagName('i')[0];
+            enemy.timer= setInterval(function () {
+                enemy.style.top=(enemy.t+=1)+"px";
+                //碰撞处理,用敌方飞机自带方法去检测我方飞机3毫秒检测一次
+enemy.crash=( enemy.t>oMineplane.offsetTop-enemy.offsetHeight&& enemy.t<oMineplane.offsetTop+oMineplane.offsetHeight&&enemy.l>oMineplane.offsetLeft-enemy.offsetWidth&&enemy.l<oMineplane.offsetLeft+oMineplane.offsetWidth
+                );
+
+            if(enemy.life==0){
+                //当飞机死了,没命了时的动作
+                    clearInterval(enemy.timer);
+                    //先把自带的计时器移除,不要在下降了
+                    if(enemy.big==1){//根据不同飞机显示不同的爆炸GIf
+                        enemy.innerHTML="<img src='img/xiaoboom.gif'>";
+                        obj.grade+=100
+                        //分数统计grade
+                    }else if(enemy.big==2){
+                        enemy.innerHTML="<img src='img/midboom.gif'>";
+                        obj.grade+=200
+                    }else if(enemy.big==3){
+                        enemy.innerHTML="<img src='img/bigboom.gif'>";
+                        obj.grade+=400
+                    }
+                enemy.timer3=setTimeout(function () {
+                    obj.removeChild(enemy)
+                    //播放完动画就可以移除掉了
+                },300)
+
+            }
+                if(enemy.crash){
+                    oMineplane.innerHTML="<img src='img/mineboom.gif '>";
+                    clearInterval( obj.timer);
+                    clearInterval( obj.timer2);
+                    obj.removeChild(enemy);
+                  enemy.timer2=setTimeout(function () {
+                      //游戏结束界面
+                        oMineplane.style.display="none";
+                        obj.getElementsByTagName('a')[0].style.display="block";
+                        obj.getElementsByTagName('p')[0].innerHTML="您的分数是"+obj.grade;
+                        obj.getElementsByTagName('a')[1].onclick=function () {
+                            close();
+                        };
+                        obj.getElementsByTagName('a')[2].onclick=function(){
+                            location.reload();
+                        };
+                        obj.getElementsByTagName('a')[1].parentNode.style.display="block";
+                    },500)
+                }
+                if( enemy.t>=obj.clientHeight){
+                    clearInterval(enemy.timer);
+                    obj.removeChild(enemy);
+                }
+            },10);
+        };
+        //子弹飞  给子弹自带方法去遍历检测飞机
+        Airplane.prototype.bullets=function (obj,id) {
+            var oWrap=document.getElementById(id);
+            var bullet=  document.createElement('b');
+            bullet.innerHTML="<img src='img/bullet1.png'>";
+            oWrap.appendChild(bullet);
+            bullet.l=obj.offsetLeft+obj.offsetWidth/2;
+            bullet.style.left=bullet.l+"px";
+            bullet.t=obj.offsetTop;
+            bullet.style.top=( bullet.t-=1)+"px";
+            bullet.style.display="block";
+
+            bullet.timer= setInterval(function () {
+            var enemy=document.getElementsByTagName('em');
+            for(var j=0;j<enemy.length;j++){
+                //子弹自带的方法检测敌方飞机碰撞
+bullet.crash=( bullet.t>enemy[j].offsetTop-enemy[j].offsetHeight&&bullet.t<enemy[j].offsetTop+enemy[j].offsetHeight
+    &&bullet.l>enemy[j].offsetLeft-enemy[j].offsetWidth&&bullet.l<enemy[j].offsetLeft+enemy[j].offsetWidth   );
+                    if(bullet.crash){
+                        clearInterval(bullet.timer);
+                        oWrap.removeChild(bullet);
+                        enemy[j].life=enemy[j].life-1;
+                    }
+                }
+                bullet.style.top=( bullet.t-=1)+"px";
+                if( bullet.t<=-10){
+                    clearInterval(bullet.timer);
+                    oWrap.removeChild(bullet);                }
+            },5);
+        };
+//我方飞机
+       Airplane.prototype.mineMove=  function  (ev,obj) {
+
+            var parent=obj.parentNode;
+            var l= ev.clientX-parent.offsetLeft-obj.offsetWidth/2;
+            var t=ev.clientY-parent.offsetTop-obj.offsetHeight/2;
+
+            if(l<0){l=0}
+            if(t<0){t=0}
+            if(l>(parent.clientWidth-obj.offsetWidth)){l=parent.clientWidth-obj.offsetWidth}
+            if(t>(parent.clientHeight-obj.offsetHeight)){t=parent.clientHeight-obj.offsetHeight}
+            obj.style.left=l+"px";
+            obj.style.top=t+"px";
+        }
+//背景滚动
+        Airplane.prototype.bgscroll=function(obj){
+            this.bgps= this.bgps==obj.offsetHeight?this.bgps=0:this.bgps+1;
+           obj.style.backgroundPositionY=this.bgps+"px"
+
+        }
+    </script>
+</head>
+<body>
+<div id="wrap" style="background-position:0 ">
+    <i><img src="img/mineplane.gif "></i>
+    <div class="star"><img src="img/star.png" alt="开始"><a href="javascript:">开始游戏</a></div>
+    <div id="end"><p></p><a href="javascript:">退出游戏</a><a href="javascript:" class="a2">重新开始</a></div>
+</div>
+</body>
+</html>
